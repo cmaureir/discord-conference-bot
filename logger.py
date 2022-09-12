@@ -10,6 +10,7 @@ def custom_logger(name):
     screen_handler.setFormatter(formatter)
     logger = logging.getLogger(name)
     logger.setLevel(logging.DEBUG)
+    #logger.setLevel(logging.INFO)
     logger.addHandler(handler)
     logger.addHandler(screen_handler)
     print("logger created")

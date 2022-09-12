@@ -9,6 +9,8 @@ from comandos.purge import Purge
 from comandos.programa import Programa
 from comandos.bienvenida import Bienvenida
 from comandos.enviar import Enviar
+from comandos.warnings import Warnings
+from comandos.programar import Programar
 
 from logger import logger
 
@@ -60,8 +62,18 @@ async def main():
         await bot.add_cog(Bienvenida(bot, data['canal_bienvenida_id'], data['guild_id']))
         await bot.add_cog(Programa(bot, data['canal_programa_id'], data['admin_role']))
         await bot.add_cog(Enviar(bot))
+        await bot.add_cog(Warnings(bot))
         await bot.start(data['bot_token'])
 
 if __name__ == "__main__":
     bot = Bot()
+
+    warnings_records = Path(data["warnings_file"])
+    if not warnings_records.is_file():
+        with open(warnings_records, "w") as f:
+            f.write("time;reporter;reported;reason\n")
+
+    bot.warnings = pd.read_csv(data["warnings_file"], sep=";")
+    logger.info(f"Warnings: {bot.warnings.shape[0]}")
+
     asyncio.run(main())
