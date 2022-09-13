@@ -3,58 +3,98 @@ from discord import User
 from datetime import datetime, timezone
 import pandas as pd
 
+COLOR_OK = 0x178D38
+COLOR_ERROR = 0xFF0000
+
+
 class Warnings(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
     @commands.has_role("Organización")
-    @commands.command(name="warning", help="Asigna un warning a un user", pass_context=True, aliases=["warn", "advertencia"])
-    async def agregar_warning(self, ctx, user: User, *, reason: str):
+    @commands.hybrid_group(name="warning", help="Adds a warning to a certain user", fallback="add")
+    async def warning_command(self, ctx: commands.Context, user: User, *, reason: str):
         timestamp = datetime.now(timezone.utc)
 
-        row_data =  {
-            "time": [timestamp],
+        row_data = {
+            "date": [timestamp],
             "reporter": [ctx.author],
             "reported": [user],
             "reason": [reason],
         }
         row_df = pd.DataFrame.from_dict(row_data)
-        self.bot.warnings = pd.concat([self.bot.warnings, row_df]).reset_index()
+        self.bot.warnings = pd.concat([self.bot.warnings, row_df]).reset_index(drop=True)
         self.bot.warnings.to_csv("warnings.csv", index=False, sep=";")
-        await ctx.channel.send("Advertencia registrada")
+
+        embed = Embed(
+            title="Advertencia registrada",
+            description=f"Reporter: `{ctx.author}`\nUser: `{user}`\nReason: `{reason}`",
+            colour=COLOR_OK,
+        )
+
+        try:
+            await ctx.reply(embed=embed)
+        except AttributeError:
+            await ctx.channel.send(embed=embed)
 
     @commands.has_role("Organización")
-    @commands.command(name="warning_check", help="Verifica el estado de los warnings", pass_context=True, aliases=["warn_check", "advertencia_check"])
-    async def verificar_warning(self, ctx, user: User=None):
-        print(self.bot.warnings)
+    @warning_command.command(name="list", help="List warnings")
+    async def list_command(self, ctx: commands.Context, user: User = None):
+        _output = ""
+
         if user is None:
             _df = self.bot.warnings
+            for idx, row in _df.iterrows():
+                _output += f"`{idx}`: {row['reported']} - {row['reason']}\n"
         else:
-            print(user, str(user))
             _df = self.bot.warnings[self.bot.warnings["reported"] == str(user)]
+            for idx, row in _df.iterrows():
+                _output += f"`{idx}`: {row['reason']}\n"
 
-        output = ""
-        for idx, row in _df.iterrows():
-            output += f"{idx}: {row['reported']} - {row['reason']}\n"
-
-        if not output:
-            await ctx.channel.send(f"No warnings for user: {user}")
+        if not _output:
+            embed = Embed(
+                title=f"No warnings for user: {user}",
+                description="",
+                colour=COLOR_ERROR,
+            )
         else:
-            await ctx.channel.send(output)
+            embed = Embed(
+                title=f"Warnings for user: {user}",
+                description=_output,
+                colour=COLOR_OK,
+            )
 
+        try:
+            await ctx.reply(embed=embed)
+        except AttributeError:
+            await ctx.channel.send(embed=embed)
 
     @commands.has_role("Organización")
-    @commands.command(name="warning_remove", help="Elimina warning basado en índice", pass_context=True, aliases=["warn_remove", "advertencia_remove"])
-    async def eliminar_warning(self, ctx, idx: int):
-        if isinstance(idx, int):
-            if idx in self.bot.warnings.index:
-                self.bot.warnings = self.bot.warnings.drop(index=idx)
-                await ctx.channel.send(f"Eliminada advertencia: {idx}")
-            else:
-                await ctx.channel.send(f"Índice incorrecto: {idx}\nOpciones disponibles:")
-                output = ""
-                for idx, row in _df.iterrows():
-                    output += f"{idx}: {row['reported']} - {row['reason']}\n"
-                await ctx.channel.send(output)
+    @warning_command.command(name="remove", help="Remove warnings by ID")
+    async def remove_command(self, ctx: commands.Context, idx: int):
+        if idx in self.bot.warnings.index:
+            row = self.bot.warnings.iloc[idx]
+            self.bot.warnings = self.bot.warnings.drop(index=idx)
+            _title = f"Eliminada advertencia: {idx}"
+            _description = (
+                f"Date: `{row['date']}`\n"
+                f"Reporter: `{row['reporter']}`\n"
+                f"User: {row['reported']}\n"
+                f"Reason:\n{row['reason']}\n"
+            )
+            _color = COLOR_OK
         else:
-            await ctx.channel.send(f"Primer argumento debe ser el ID de la advertencia. Usaste: {idx}")
+            _title = f"Índice incorrecto: {idx}"
+            _description = "Utilice `$warning list` para listar"
+            _color = COLOR_ERROR
+
+        embed = Embed(
+            title=_title,
+            description=_description,
+            colour=_color,
+        )
+
+        try:
+            await ctx.reply(embed=embed)
+        except AttributeError:
+            await ctx.channel.send(embed=embed)

@@ -10,7 +10,7 @@ from comandos.programa import Programa
 from comandos.bienvenida import Bienvenida
 from comandos.enviar import Enviar
 from comandos.warnings import Warnings
-from comandos.programar import Programar
+from comandos.programar_mensaje import ProgramarMensaje
 
 from logger import logger
 
@@ -27,8 +27,14 @@ class Bot(commands.Bot):
 
         super().__init__(command_prefix=commands.when_mentioned_or('$'), intents=intents)
 
+        self.guild = None
+
     async def on_ready(self):
         logger.info(f'Logged in as {self.user} (ID: {self.user.id})')
+        await self.tree.sync()
+        if self.guild is None:
+            self.guild = discord.utils.get(self.guilds, name="PyConES 2022")
+
 
     async def on_command_error(self, ctx, error):
         if isinstance(error, (commands.MissingRole, commands.MissingAnyRole)):
@@ -37,14 +43,14 @@ class Bot(commands.Bot):
             logger.info(error)
             logger.info("Not handled")
 
-    async def on_ready(self):
-        channel = self.get_channel(986704490470182912)
+        # TODO: Enviar mensaje inicial para el canal de armar el programa
+        #week_ago = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=7)
+        #channel = self.get_channel(986704490470182912)
 
+        #content = f"¿Te gustaría armar tu programa? Presiona el {si_emoji} de este mensaje"
 
-        content = f"¿Te gustaría armar tu programa? Presiona el {si_emoji} de este mensaje"
-
-        msg = await channel.send(content)
-        await msg.add_reaction(si_emoji)
+        #msg = await channel.send(content)
+        #await msg.add_reaction(si_emoji)
 
     async def on_reaction_add(self, reaction, user):
         msg = reaction.message
@@ -60,9 +66,12 @@ async def main():
         await bot.add_cog(Ping(bot))
         await bot.add_cog(Purge(bot))
         await bot.add_cog(Bienvenida(bot, data['canal_bienvenida_id'], data['guild_id']))
-        await bot.add_cog(Programa(bot, data['canal_programa_id'], data['admin_role']))
         await bot.add_cog(Enviar(bot))
         await bot.add_cog(Warnings(bot))
+        await bot.add_cog(ProgramarMensaje(bot))
+        # TODO
+        # El funcionamiento de crear programas personalizados aún no está listo
+        #await bot.add_cog(Programa(bot, data['canal_programa_id'], data['admin_role']))
         await bot.start(data['bot_token'])
 
 if __name__ == "__main__":
@@ -71,9 +80,16 @@ if __name__ == "__main__":
     warnings_records = Path(data["warnings_file"])
     if not warnings_records.is_file():
         with open(warnings_records, "w") as f:
-            f.write("time;reporter;reported;reason\n")
+            f.write("date;reporter;reported;reason\n")
+
+    scheduled_records = Path(data["scheduled_messages_file"])
+    if not scheduled_records.is_file():
+        with open(scheduled_records, "w") as f:
+            f.write("author;date;channel;message\n")
 
     bot.warnings = pd.read_csv(data["warnings_file"], sep=";")
+    bot.scheduled = pd.read_csv(data["scheduled_messages_file"], sep=";")
     logger.info(f"Warnings: {bot.warnings.shape[0]}")
+    logger.info(f"Scheduled messages: {bot.scheduled.shape[0]}")
 
     asyncio.run(main())
