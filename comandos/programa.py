@@ -1,8 +1,5 @@
 from discord.ext import commands
-from discord import utils
 import discord
-
-from logger import logger
 
 
 # Define a simple View that gives us a confirmation menu
@@ -14,16 +11,16 @@ class Confirm(discord.ui.View):
     # When the confirm button is pressed, set the inner value to `True` and
     # stop the View from listening to more input.
     # We also send the user an ephemeral message that we're confirming their choice.
-    @discord.ui.button(label='Confirm', style=discord.ButtonStyle.green)
+    @discord.ui.button(label="Confirm", style=discord.ButtonStyle.green)
     async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message('Confirming', ephemeral=True)
+        await interaction.response.send_message("Confirming", ephemeral=True)
         self.value = True
         self.stop()
 
     # This one is similar to the confirmation button except sets the inner value to `False`
-    @discord.ui.button(label='Cancel', style=discord.ButtonStyle.grey)
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.grey)
     async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message('Cancelling', ephemeral=True)
+        await interaction.response.send_message("Cancelling", ephemeral=True)
         self.value = False
         self.stop()
 
@@ -34,10 +31,11 @@ class Programa(commands.Cog):
         self.programa_id = programa_id
         self.admin_role = admin_role
 
-
     @commands.command(name="programa", help="Comenzar configuración programa", pass_context=True)
     async def comienza_programa(self, ctx):
         print("programa")
+
+
 #        guild = ctx.message.guild
 #        category = ctx.channel.category
 #        author_name = ctx.message.author
@@ -74,8 +72,8 @@ class Programa(commands.Cog):
 #
 #        await discord.Message.delete(mensaje)
 
-        # Enviar mensaje en el nuevo canal para comenzar la selección de charlas
-        # Preguntar qué día de la conferencia se quiere configurar
-        # Enviar lista de charlas por bloque de horario
-        # Agregar reacciones para las charlas que se seleccionarán
-        # Agregar opción de no seleccionar ninguna
+# Enviar mensaje en el nuevo canal para comenzar la selección de charlas
+# Preguntar qué día de la conferencia se quiere configurar
+# Enviar lista de charlas por bloque de horario
+# Agregar reacciones para las charlas que se seleccionarán
+# Agregar opción de no seleccionar ninguna

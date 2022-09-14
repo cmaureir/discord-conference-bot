@@ -1,5 +1,5 @@
 from discord.ext import commands, tasks
-from discord import User, Embed, TextChannel, utils
+from discord import Embed, TextChannel, utils
 from datetime import datetime, timezone
 
 import pytz
@@ -12,6 +12,9 @@ COLOR_ERROR = 0xFF0000
 class ProgramarMensaje(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+
+    @commands.Cog.listener()
+    async def on_ready(self):
         self.envia_mensajes_programados.start()
 
     @commands.has_role("Organización")
@@ -21,7 +24,6 @@ class ProgramarMensaje(commands.Cog):
     async def schedule_command(
         self, ctx: commands.Context, channel: TextChannel, date: str, time: str, *, message: str
     ):
-        print(date, time, message)
         # TODO
         # - Check if date and time are in the future
         # - Show ID when the message was created
@@ -72,15 +74,17 @@ class ProgramarMensaje(commands.Cog):
             row_data = {
                 "author": [ctx.author],
                 "date": [scheduled_date],
-                "channel": [channel],
+                "channel": [channel.name],
                 "message": [message],
             }
             row_df = pd.DataFrame.from_dict(row_data)
             self.bot.scheduled = pd.concat([self.bot.scheduled, row_df]).reset_index(drop=True)
             self.bot.scheduled.to_csv("scheduled.csv", index=False, sep=";")
 
-            embed.add_field(name="Fecha", value=scheduled_date, inline=False)
-            embed.add_field(name="Contenido", value=message, inline=False)
+            embed.add_field(name="Author", value=ctx.author, inline=False)
+            embed.add_field(name="Channel", value=channel.mention, inline=False)
+            embed.add_field(name="Date", value=scheduled_date, inline=False)
+            embed.add_field(name="Content", value=message, inline=False)
 
         try:
             await ctx.reply(embed=embed)
@@ -99,7 +103,7 @@ class ProgramarMensaje(commands.Cog):
             if self.bot.guild is not None:
                 channel = utils.get(self.bot.guild.text_channels, name=row["channel"])
             else:
-                channel = f"#row['channel']"
+                channel = f"#{row['channel']}"
             _response = (
                 f"Eliminado mensaje: {idx}\n"
                 f"Date: `{row['date']}`\n"
@@ -159,10 +163,8 @@ class ProgramarMensaje(commands.Cog):
         # Comparar el tiempo actual, con el objecto 'datetime'
         # que está en la columna 'date'
         now_date = datetime.now(timezone.utc)
-        print("Mirando mensajes", now_date)
         for idx, row in self.bot.scheduled.iterrows():
-            _date = pd.to_datetime(row['date'])
-            print(_date)
+            _date = pd.to_datetime(row["date"])
             if _date < now_date:
                 if self.bot.guild is None:
                     # TODO
@@ -172,8 +174,17 @@ class ProgramarMensaje(commands.Cog):
                     # No debería pasar...
                     print("programar_mensaje: self.bot.guild not ready")
                 else:
-                    channel = utils.get(self.bot.guild.text_channels, name=row["channel"])
-                    message = row['message']
+                    channel_name = row["channel"]
+                    channel = None
+
+                    assert not isinstance(channel_name, TextChannel)
+
+                    if channel_name not in self.bot.channels:
+                        channel = utils.get(self.bot.guild.text_channels, name=channel_name)
+                    else:
+                        channel = self.bot.get_channel(self.bot.channels[channel_name])
+
+                    message = row["message"]
 
                     embed = Embed(
                         title="Mensaje de la Organización\n\n",
@@ -187,3 +198,8 @@ class ProgramarMensaje(commands.Cog):
                     # Borrar mensaje
                     self.bot.scheduled = self.bot.scheduled.drop(index=idx)
                     self.bot.scheduled.to_csv("scheduled.csv", index=False, sep=";")
+
+    @envia_mensajes_programados.before_loop
+    async def before_the_task(self):
+        print("Waiting until bot is ready")
+        await self.bot.wait_until_ready()

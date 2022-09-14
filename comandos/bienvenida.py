@@ -1,6 +1,7 @@
 from discord.ext import commands
 from logger import logger
 
+
 class Bienvenida(commands.Cog):
     def __init__(self, bot, channel_id, guild_id):
         self.bot = bot
@@ -21,6 +22,8 @@ class Bienvenida(commands.Cog):
             logger.info("Setting up channel")
             self.channel = self.guild.get_channel(self.channel_id)
 
-        await self.channel.send(f'¡Hola {member.mention}! '
-                                'Te damos la bienvenida a la PyConES\n'
-                                    '¿Nos cuentas un poco de ti?')
+        await self.channel.send(
+            f"¡Hola {member.mention}! "
+            "Te damos la bienvenida a la PyConES\n"
+            "¿Nos cuentas un poco de ti?"
+        )

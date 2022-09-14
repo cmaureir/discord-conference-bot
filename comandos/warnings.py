@@ -1,5 +1,5 @@
 from discord.ext import commands
-from discord import User
+from discord import User, Embed
 from datetime import datetime, timezone
 import pandas as pd
 

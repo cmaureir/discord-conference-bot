@@ -19,22 +19,26 @@ logger.info("Got configuration data")
 
 si_emoji = "\N{WHITE HEAVY CHECK MARK}"
 
+
 class Bot(commands.Bot):
     def __init__(self):
         intents = discord.Intents.default()
         intents.message_content = True
         intents.members = True
 
-        super().__init__(command_prefix=commands.when_mentioned_or('$'), intents=intents)
+        super().__init__(command_prefix=commands.when_mentioned_or("$"), intents=intents)
 
         self.guild = None
+        self.channels = dict()
 
     async def on_ready(self):
-        logger.info(f'Logged in as {self.user} (ID: {self.user.id})')
+        logger.info(f"Logged in as {self.user} (ID: {self.user.id})")
         await self.tree.sync()
         if self.guild is None:
             self.guild = discord.utils.get(self.guilds, name="PyConES 2022")
-
+            for channel in self.guild.text_channels:
+                self.channels[channel.name] = channel.id
+            logger.info(f"Found {len(self.channels)} channels")
 
     async def on_command_error(self, ctx, error):
         if isinstance(error, (commands.MissingRole, commands.MissingAnyRole)):
@@ -43,36 +47,26 @@ class Bot(commands.Bot):
             logger.info(error)
             logger.info("Not handled")
 
-        # TODO: Enviar mensaje inicial para el canal de armar el programa
-        #week_ago = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=7)
-        #channel = self.get_channel(986704490470182912)
-
-        #content = f"¿Te gustaría armar tu programa? Presiona el {si_emoji} de este mensaje"
-
-        #msg = await channel.send(content)
-        #await msg.add_reaction(si_emoji)
-
     async def on_reaction_add(self, reaction, user):
         msg = reaction.message
         if msg.channel.id == 986704490470182912:
             if reaction.emoji != si_emoji:
                 await msg.remove_reaction(reaction, user)
-            print(user)
-
 
 
 async def main():
     async with bot:
         await bot.add_cog(Ping(bot))
         await bot.add_cog(Purge(bot))
-        await bot.add_cog(Bienvenida(bot, data['canal_bienvenida_id'], data['guild_id']))
+        await bot.add_cog(Bienvenida(bot, data["canal_bienvenida_id"], data["guild_id"]))
         await bot.add_cog(Enviar(bot))
         await bot.add_cog(Warnings(bot))
         await bot.add_cog(ProgramarMensaje(bot))
         # TODO
         # El funcionamiento de crear programas personalizados aún no está listo
-        #await bot.add_cog(Programa(bot, data['canal_programa_id'], data['admin_role']))
-        await bot.start(data['bot_token'])
+        # await bot.add_cog(Programa(bot, data['canal_programa_id'], data['admin_role']))
+        await bot.start(data["bot_token"])
+
 
 if __name__ == "__main__":
     bot = Bot()
