@@ -2,6 +2,8 @@ from discord.ext import commands, tasks
 from discord import Embed, TextChannel, utils
 from datetime import datetime, timezone
 
+from logger import logger
+
 import pytz
 import pandas as pd
 
@@ -172,7 +174,7 @@ class ProgramarMensaje(commands.Cog):
                     # diciendo que hubo un problema con el estado
                     # de la instancia de server del Bot.
                     # No debería pasar...
-                    print("programar_mensaje: self.bot.guild not ready")
+                    logger.error("self.bot.guild not ready: None")
                 else:
                     channel_name = row["channel"]
                     channel = None
@@ -201,5 +203,5 @@ class ProgramarMensaje(commands.Cog):
 
     @envia_mensajes_programados.before_loop
     async def before_the_task(self):
-        print("Waiting until bot is ready")
+        logger.info("Waiting until bot is ready")
         await self.bot.wait_until_ready()

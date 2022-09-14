@@ -58,7 +58,7 @@ async def main():
     async with bot:
         await bot.add_cog(Ping(bot))
         await bot.add_cog(Purge(bot))
-        await bot.add_cog(Bienvenida(bot, data["canal_bienvenida_id"], data["guild_id"]))
+        await bot.add_cog(Bienvenida(bot, data["canal_bienvenida_id"]))
         await bot.add_cog(Enviar(bot))
         await bot.add_cog(Warnings(bot))
         await bot.add_cog(ProgramarMensaje(bot))
