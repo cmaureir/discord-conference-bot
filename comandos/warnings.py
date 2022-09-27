@@ -63,7 +63,7 @@ class Warnings(commands.Cog):
             if user is None:
                 _title = "No warnings"
             else:
-                _title=f"No warnings for user: {user}"
+                _title = f"No warnings for user: {user}"
 
             embed = Embed(
                 title=_title,

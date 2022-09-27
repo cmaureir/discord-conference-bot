@@ -19,13 +19,22 @@ class Enviar(commands.Cog):
     )
     async def send(self, ctx: commands.Context, channel: TextChannel, *, message: str):
 
+        reply_embed = Embed(
+            title=f"Mensaje enviado a {channel}",
+            description=f"{channel.mention}:\n{message}",
+            colour=COLOR_MSG,
+        )
+
+        try:
+            await ctx.reply(embed=reply_embed)
+        except AttributeError:
+            await ctx.channel.send(embed=reply_embed)
+
         embed = Embed(
             title="Mensaje de la Organización",
             description=message,
             colour=COLOR_MSG,
         )
 
-        try:
-            await ctx.reply(embed=embed)
-        except AttributeError:
-            await ctx.channel.send(embed=embed)
+        # Send the command to the channel passed to the command
+        await channel.send(embed=embed)
